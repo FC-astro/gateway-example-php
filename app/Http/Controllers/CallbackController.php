@@ -2,15 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Transaction;
-use App\Models\TransactionType;
-use App\Models\User;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Hash;
-use PHPUnit\Util\Json;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
+use function PHPUnit\Framework\arrayHasKey;
 
 class CallbackController extends Controller
 {
@@ -18,20 +14,61 @@ class CallbackController extends Controller
     {
         $headers = $request->get('headers');
         if (! $this->authenticatePaylivreCallback($headers)) {
-            return Response::HTTP_UNAUTHORIZED;
+            return $this->respondUnauthorized();
         }
 
         $payload = $request->get('data');
 
-        if ($payload['order_status_id']);{
-            return Response::HTTP_OK;
-    }
+        if (arrayHasKey('order_status_id',$payload) || arrayHasKey('order_status',$payload)) {
+            // Handle order status
+            return $this->respondSuccess();
+        }
+        return $this->respondBadRequest();
     }
 
     private function authenticatePaylivreCallback($headers):bool
     {
         return true;
     }
+
+    public function respondRaw($data, array $headers = []): JsonResponse
+    {
+        $response = Response::json($data, $this->getStatusCode(), $headers);
+
+        return $response;
+    }
+
+
+    public function respondSuccess($data = null, string $message = 'OK', array $headers = []): JsonResponse
+    {
+        return $this->respondRaw([
+            'status' => 'success',
+            'status_code' => Response::HTTP_OK,
+            'message' => $message,
+            'data' => $data,
+        ], $headers);
+    }
+
+    public function respondUnauthorized($data = null, string $message = 'Unauthorized', array $headers = []): JsonResponse
+    {
+        return $this->respondRaw([
+            'status' => 'unauthorized',
+            'status_code' => Response::HTTP_UNAUTHORIZED,
+            'message' => $message,
+            'data' => $data,
+        ], $headers);
+    }
+
+    public function respondBadRequest($data = null, string $message = 'Bad Request', array $headers = []): JsonResponse
+    {
+        return $this->respondRaw([
+            'status' => 'bad request',
+            'status_code' => Response::HTTP_BAD_REQUEST,
+            'message' => $message,
+            'data' => $data,
+        ], $headers);
+    }
+
     /*public function createCallback($request)
     {
         $payload = $this->simulateCallbackPayload($request);
