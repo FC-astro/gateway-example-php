@@ -16,19 +16,21 @@ class CallbackController extends Controller
 {
     public function receivePaylivreCallback(Request $request)
     {
-        /*if (! $this->authenticatePaylivreCallback($request)) {
+        $headers = $request->get('headers');
+        if (! $this->authenticatePaylivreCallback($headers)) {
             return Response::HTTP_UNAUTHORIZED;
-        }*/
+        }
 
+        $payload = $request->get('data');
 
-        $payload = json_decode($request->input('payload'),true);
-
-        if ($payload['']);
+        if ($payload['order_status_id']);{
+            return Response::HTTP_OK;
+    }
     }
 
-    private function authenticatePaylivreCallback($request)
+    private function authenticatePaylivreCallback($headers):bool
     {
-
+        return true;
     }
     /*public function createCallback($request)
     {
