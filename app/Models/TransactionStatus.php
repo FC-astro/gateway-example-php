@@ -11,4 +11,5 @@ class TransactionStatus extends Model
     const PENDING = 1;
     const COMPLETED = 2;
     const EXPIRED = 3;
+    const NEW = 4;
 }

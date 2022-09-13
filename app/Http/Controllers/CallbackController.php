@@ -2,19 +2,35 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PaylivreGateway;
 use App\Models\Transaction;
 use App\Models\TransactionType;
 use App\Models\User;
 use Carbon\Carbon;
-use http\Env\Response;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use PHPUnit\Util\Json;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 class CallbackController extends Controller
 {
-    public function createCallback($request)
+    public function receivePaylivreCallback(Request $request)
+    {
+        /*if (! $this->authenticatePaylivreCallback($request)) {
+            return Response::HTTP_UNAUTHORIZED;
+        }*/
+
+
+        $payload = json_decode($request->input('payload'),true);
+
+        if ($payload['']);
+    }
+
+    private function authenticatePaylivreCallback($request)
+    {
+
+    }
+    /*public function createCallback($request)
     {
         $payload = $this->simulateCallbackPayload($request);
         $callback = json_encode([
@@ -27,14 +43,14 @@ class CallbackController extends Controller
     }
 
     public function simulateReceiveCallbackAndReturnSuccessAnswer($data){
-        $callback = $this->createCallback($data); //
-        $this->handleCallback(json_decode($callback));
-        return $callback;
+        //$callback = $this->createCallback($data); //
+        $this->handleCallback(json_decode($data));
+        return ResponseAlias::HTTP_OK;
     }
 
     public function handleCallback($callback)
     {
-        if($callback->data->order_status_id == 2) {
+        /*if($callback->data->order_status_id == 2) {
             (new TransactionController())->completeTransaction($callback);
         } elseif ($callback->data->order_status_id == 3) {
             (new TransactionController())->cancelTransaction($callback);
@@ -129,14 +145,14 @@ class CallbackController extends Controller
              * 1 = Billet Deposit.
              * 4 = PIX Deposit.
              * 5 = Withdrawal request.
-             * 6 = Deposit From Paylivre Wallet Balance.*/
+             * 6 = Deposit From Paylivre Wallet Balance.
             'order_status_id' => $orderStatus,
             /* 0 = NEW -> Order created.
             * 1 = PENDING -> Waiting for the user make the payment or for Paylivre to complete the withdrawal.
             * 2 = APPROVED -> Order completed successfully.
             * 3 = CANCELLED -> Some issue occurred with the payment and all intermediate transactions were cancelled, for withdrawals, the amount is returned to the origin.
             * 4 = EXPIRED -> The user failed to pay the deposit in an appropriate time frame.
-            * ? = PROCESSING -> The payment was identified, and Paylivre is processing the intermediate transactions to complete the order.*/
+            * ? = PROCESSING -> The payment was identified, and Paylivre is processing the intermediate transactions to complete the order.
             'notes' => null, // Cancellation reason, if any
             // request = Data from the initial request
             'request' => '{"order_type_id":'.$paymentMethod.',"original_amount":"'.$originalAmount.'"","original_currency":"'.$transaction->currency.'","amount":'.$amount.',"tax_total":'.$taxTotal.',"deposit_taxes":'.$depositTaxes.',"exchange_taxes":'.$exchangeTaxes.',"broker_deposit_taxes":'.$brokerDepositTaxes.',"ecommerce_taxes":0,"original_decimals":2,"decimals":2,"currency":"BRL","user_id":'.($transaction->user_id + 25).',"order_status_id":0,"partner_order_id":"'.$transaction->id.'","sender_partner_account_id":"'.$transaction->user_id.'","partner_id":'.env('MERCHANT_ID').',"quote_id":'.$quote.',"redirect_url":"http://127.0.0.1:8000/transactions"}',
@@ -179,5 +195,5 @@ class CallbackController extends Controller
             'amount_received_currency' => $transaction->currency
         ];
         return $callback;
-    }
+    }*/
 }

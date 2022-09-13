@@ -24,6 +24,6 @@ Route::prefix('/transactions')->group(function() {
     Route::get('/', [TransactionController::class,'list'])->name('transactions');
     Route::prefix('/{transaction_id}')->group(function()
     {
-        Route::post('/callback',[CallbackController::class,'simulateReceiveCallbackAndReturnSuccessAnswer'])->name('callback');
+        Route::post('/callback',[CallbackController::class,'receivePaylivreCallback'])->name('callback');
     });
 });

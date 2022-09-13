@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Http\Controllers\OperateController;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -15,7 +16,50 @@ class PaylivreGateway extends Model
     const TYPE_TED = 4;
     const TYPE_WALLET = 8;
 
-    public function generateGatewayUrl(Request $request, Transaction $transaction) : string
+    public function generatePaylivreGatewayUrl(Request $request, Transaction $transaction): string
+    {
+        $parameters['merchant_id'] = env('PAYLIVRE_MERCHANT_ID');
+        $parameters['operation'] = $request->input('operation');
+        $parameters['email'] = $request->input('email');
+        $parameters['document_number'] = $request->input('document_number');
+        $parameters['merchant_transaction_id'] = $transaction->id;
+        $parameters['amount'] = $transaction->amount;
+        $parameters['currency'] = $transaction->currency;
+        $parameters['type'] = $this::TYPE_PIX;
+        $parameters['account_id'] = $transaction->user->id;
+        $parameters['auto_approve'] = true;
+        $parameters['callback_url'] = env('APP_URL').'/callback';
+        $parameters['redirect_url'] = 'google.com';
+
+        if ($request->input('operation') == TransactionType::WITHDRAWAL) {
+            $parameters['pix_key'] = $request->input('pix_key');
+            $parameters['pix_key_type'] = $request->input('pix_key_type');
+        }
+
+        $urlParameters = http_build_query($parameters);
+
+        $signature = $this->buildSignature($urlParameters);
+
+        $urlParameters = $urlParameters.'&signature='.$signature;
+
+        $gatewayUrl = env('PAYLIVRE_GATEWAY_BASE_URL') . $urlParameters;
+
+        return $gatewayUrl;
+    }
+
+    private function buildSignature(string $urlParameters):string
+    {
+        $baseUrl = env('PAYLIVRE_GATEWAY_BASE_URL');
+        $gatewayToken = env('PAYLIVRE_GATEWAY_TOKEN');
+
+        $toHash = $gatewayToken.$baseUrl.$urlParameters;
+
+        $hashed = password_hash($toHash,'PASSWORD_ARGON2I');
+        $signature = base64_encode($hashed);
+
+        return $signature;
+    }
+    /*public function generateGatewayUrl(Request $request, Transaction $transaction) : string
     {
 
         $gatewayUrl = env('GATEWAY_BASE_URL');
@@ -51,7 +95,7 @@ class PaylivreGateway extends Model
 
         //account_id = the requesting user's ID in the merchant's system
         $urlParameters = $urlParameters.'&account_id='.$transaction->user_id;
-        
+
         //auto_approve = if the payment from Payivre to the customer should be automatically debited from the merchant's system and queued for processing (1 = TRUE)
         //or if the request needs to be manually approved by the merchant before debiting the amount and queueing for processing (0 = false)
         $urlParameters = $urlParameters.'&auto_approve='.'1';
@@ -111,5 +155,5 @@ class PaylivreGateway extends Model
         $urlParameters = $urlParameters.'&first_name=Liver&last_name=test';
 
         return $gatewayUrl.$urlParameters;
-    }
+    }*/
 }

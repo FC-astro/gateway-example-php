@@ -45,7 +45,7 @@ class TransactionController extends Controller
             'transaction_status' => TransactionStatus::PENDING,
             'amount' => $amount,
             'currency' => 'USD',
-            'callback_url' => 'http://127.0.0.1:8000/'
+            'callback_url' => env('APP_URL').'/callback'
         ]);
         $depositTransaction->callback_url = $depositTransaction->callback_url.$depositTransaction->id.'/callback';
 
