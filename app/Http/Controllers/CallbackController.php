@@ -2,25 +2,65 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Transaction;
+use App\Models\TransactionStatus;
+use App\Models\TransactionType;
+use App\Models\User;
+use App\Services\TransactionService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response as ResponseAlias;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Response as Res;
 use function PHPUnit\Framework\arrayHasKey;
 
 class CallbackController extends Controller
 {
     public function receivePaylivreCallback(Request $request)
     {
-        $headers = $request->get('headers');
-        if (! $this->authenticatePaylivreCallback($headers)) {
+        $authToken = $request->header('X-Token');
+        if (! $this->authenticatePaylivreCallback($authToken)) {
             return $this->respondUnauthorized();
         }
 
-        $payload = $request->get('data');
+        $payload = $request->all();
 
-        if (arrayHasKey('order_status_id',$payload) || arrayHasKey('order_status',$payload)) {
-            // Handle order status
+        if (arrayHasKey('order_status_id',$payload)) {
+            $transaction = Transaction::find($payload['merchant_transaction_id']);
+            if (in_array($transaction->transaction_status,[TransactionStatus::COMPLETED,TransactionStatus::CANCELLED,TransactionStatus::EXPIRED])) {
+                return $this->respondBadRequest();
+            }
+            switch ($payload['order_status_id']) {
+                case 0: // Status NEW
+                case 1: // Status PENDING
+                    // Request received successfully, finishing pre-processing and waiting for approval
+                    $transaction->transaction_status = TransactionStatus::PENDING;
+                    $transaction->notes = 'Waiting for payment';
+                    $transaction->save();
+                    break;
+                case 2: // Status APPROVED -> Final Status
+                    // Request approved successfully finish the transaction
+                    $transactionService = new TransactionService($transaction);
+                    $transactionService->completeTransaction($payload);
+                    break;
+                case 3: // Status CANCELED -> Final Status
+                    // Unable to complete request, must be terminated unsuccessfully
+                    $transactionService = new TransactionService($transaction);
+                    $transactionService->cancelTransaction($payload);
+                    break;
+                case 4: // Status EXPIRED -> Final Status
+                    // Payment was not finished in the permitted time, must be terminated unsuccessfully
+                    $transactionService = new TransactionService($transaction);
+                    $transactionService->expireTransaction($payload);
+                    break;
+                case 5: // Status INCOMPLETE
+                    // User inputed the wrong credentials, allowed to retry up to 4 times
+                    $transaction->transaction_status = TransactionStatus::PENDING;
+                    $transaction->notes = 'Wrong Credentials';
+                    $transaction->save();
+                    break;
+            }
             return $this->respondSuccess();
         }
         return $this->respondBadRequest();
@@ -33,7 +73,7 @@ class CallbackController extends Controller
 
     public function respondRaw($data, array $headers = []): JsonResponse
     {
-        $response = Response::json($data, $this->getStatusCode(), $headers);
+        $response = Res::json($data, $data['status_code'], $headers);
 
         return $response;
     }
@@ -67,35 +107,6 @@ class CallbackController extends Controller
             'message' => $message,
             'data' => $data,
         ], $headers);
-    }
-
-    /*public function createCallback($request)
-    {
-        $payload = $this->simulateCallbackPayload($request);
-        $callback = json_encode([
-            'status' => 'success',
-            'status_code' => 200,
-            'message' => 'OK',
-            'data' => $payload
-        ]);
-        return $callback;
-    }
-
-    public function simulateReceiveCallbackAndReturnSuccessAnswer($data){
-        //$callback = $this->createCallback($data); //
-        $this->handleCallback(json_decode($data));
-        return ResponseAlias::HTTP_OK;
-    }
-
-    public function handleCallback($callback)
-    {
-        /*if($callback->data->order_status_id == 2) {
-            (new TransactionController())->completeTransaction($callback);
-        } elseif ($callback->data->order_status_id == 3) {
-            (new TransactionController())->cancelTransaction($callback);
-        } elseif ($callback->data->order_status_id == 4) {
-            (new TransactionController())->expireTransaction($callback);
-        }
     }
 
     public function simulateCallbackPayload($request)
@@ -184,14 +195,13 @@ class CallbackController extends Controller
              * 1 = Billet Deposit.
              * 4 = PIX Deposit.
              * 5 = Withdrawal request.
-             * 6 = Deposit From Paylivre Wallet Balance.
+             * 6 = Deposit From Paylivre Wallet Balance.*/
             'order_status_id' => $orderStatus,
             /* 0 = NEW -> Order created.
             * 1 = PENDING -> Waiting for the user make the payment or for Paylivre to complete the withdrawal.
             * 2 = APPROVED -> Order completed successfully.
             * 3 = CANCELLED -> Some issue occurred with the payment and all intermediate transactions were cancelled, for withdrawals, the amount is returned to the origin.
-            * 4 = EXPIRED -> The user failed to pay the deposit in an appropriate time frame.
-            * ? = PROCESSING -> The payment was identified, and Paylivre is processing the intermediate transactions to complete the order.
+            * 4 = EXPIRED -> The user failed to pay the deposit in an appropriate time frame.*/
             'notes' => null, // Cancellation reason, if any
             // request = Data from the initial request
             'request' => '{"order_type_id":'.$paymentMethod.',"original_amount":"'.$originalAmount.'"","original_currency":"'.$transaction->currency.'","amount":'.$amount.',"tax_total":'.$taxTotal.',"deposit_taxes":'.$depositTaxes.',"exchange_taxes":'.$exchangeTaxes.',"broker_deposit_taxes":'.$brokerDepositTaxes.',"ecommerce_taxes":0,"original_decimals":2,"decimals":2,"currency":"BRL","user_id":'.($transaction->user_id + 25).',"order_status_id":0,"partner_order_id":"'.$transaction->id.'","sender_partner_account_id":"'.$transaction->user_id.'","partner_id":'.env('MERCHANT_ID').',"quote_id":'.$quote.',"redirect_url":"http://127.0.0.1:8000/transactions"}',
@@ -226,13 +236,14 @@ class CallbackController extends Controller
             'bank_account_id' => $bankAccountId, // The ID for the User's bank account used for withdrawal at Paylivre (if registered)
             'document_validation_id' => $documentValidationId, // The ID for the User's document validatin at Paylivre (if registered)
             'url_hash_code' => $urlHashCode, // A parameter for the withdrawal gateway to check the status at Paylivre
-            'completed_at' => $orderStatus == 2 ? Carbon::now() : null, // Date Time it was completed at Paylivre
-            'created_at' => $transaction->created_at, // Date Time created at Paylivre
-            'updated_at' => Carbon::now(), // Date Time last updated at Paylivre
+            'completed_at' => $orderStatus == 2 ? Carbon::now()->toDateTimeString() : null, // Date Time it was completed at Paylivre
+            'created_at' => $transaction->created_at->toDateTimeString(), // Date Time created at Paylivre
+            'updated_at' => Carbon::now()->toDateTimeString(), // Date Time last updated at Paylivre
             'user_email'=> $user->email, // The user email for the request
             'amount_received' => $originalAmount - $brokerDepositTaxes,
-            'amount_received_currency' => $transaction->currency
+            'amount_received_currency' => $transaction->currency,
+            'merchant_transaction_id' => $transaction->id,
         ];
         return $callback;
-    }*/
+    }
 }

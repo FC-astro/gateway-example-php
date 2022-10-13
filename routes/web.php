@@ -20,10 +20,8 @@ Route::post('/operate', [OperateController::class,'index'])->name('operate');
 Route::post('/operate/deposit',[TransactionController::class,'deposit'])->name('deposit');
 Route::post('/operate/withdraw',[TransactionController::class,'withdraw'])->name('withdraw');
 
+Route::post('/callback',[CallbackController::class,'receivePaylivreCallback'])->name('callback');
+
 Route::prefix('/transactions')->group(function() {
     Route::get('/', [TransactionController::class,'list'])->name('transactions');
-    Route::prefix('/{transaction_id}')->group(function()
-    {
-        Route::post('/callback',[CallbackController::class,'receivePaylivreCallback'])->name('callback');
-    });
 });

@@ -21,16 +21,16 @@
                             <label for="email" class="sr-only">Email</label>
                             <input type="text" name="email" id="email" placeholder="Your email" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('email')border-blue-500 @enderror" value="{{old('email')}}">
 
-                            <label for="tax_document" class="sr-only">Tax Document Number</label>
-                            <input type="text" name="tax_document" id="tax_document" placeholder="Your tax document number" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('tax_document')border-blue-500 @enderror"value="{{old('tax_document')}}">
+                            <label for="document_number" class="sr-only">Tax Document Number</label>
+                            <input type="text" name="document_number" id="document_number" placeholder="Your tax document number" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('document_number')border-blue-500 @enderror"value="{{old('document_number')}}">
 
                             <label for="amount" class="sr-only">Amount</label>
                             <input type="text" name="amount" id="amount" placeholder="Amount" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('amount')border-blue-500 @enderror">
                         </div>
 
                         <div class="flex mr-3">
-                            <button type="submit" name="deposit" class="flex bg-blue-600 text-white px=4 py-3 rounded font-medium w-6/12 justify-center mr-3" value="deposit">PAYLIVRE DEPOSIT GATEWAY</button>
-                            <button type="submit" name="withdrawal" class="ml-3 bg-blue-600 text-white px=4 py-3 rounded font-medium w-6/12 " value="withdrawal">PAYLIVRE WITHDRAWAL GATEWAY</button>
+                            <button type="submit" name="operation" class="flex bg-blue-600 text-white px=4 py-3 rounded font-medium w-6/12 justify-center mr-3" value="0">PAYLIVRE DEPOSIT GATEWAY</button>
+                            <button type="submit" name="operation" class="ml-3 bg-blue-600 text-white px=4 py-3 rounded font-medium w-6/12 " value="5">PAYLIVRE WITHDRAWAL GATEWAY</button>
                         </div>
                     @endauth
                 </form>
@@ -93,10 +93,10 @@
                                 </select>
                                 <div class="flex">
                                 <input type="hidden" id="transaction_id" name="transaction_id" value="{{$transaction->id}}">
-                                <button type="submit" name="callback" class="text-white bg-blue-500 rounded ml-3 font-medium" value="callback">Simulate Callback</button>
+                                <button type="submit" name="operation" class="text-white bg-blue-500 rounded ml-3 font-medium" value="10">Simulate Callback</button>
                                 </div>
-                                </div>
-                                @endif
+                            </div>
+                            @endif
                         </form>
                         </div>
                     </div>

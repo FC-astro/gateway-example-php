@@ -26,7 +26,7 @@ class TransactionController extends Controller
         $this->validate($request, [
             'amount' => 'required|string',
             'email' => 'required|email',
-            'tax_document' => 'required'
+            'document_number' => 'required'
         ]);
 
         if (str_contains($request->amount,',')) {
@@ -45,12 +45,12 @@ class TransactionController extends Controller
             'transaction_status' => TransactionStatus::PENDING,
             'amount' => $amount,
             'currency' => 'USD',
-            'callback_url' => env('APP_URL').'/callback'
+            'callback_url' => env('APP_URL').'/callback',
         ]);
         $depositTransaction->callback_url = $depositTransaction->callback_url.$depositTransaction->id.'/callback';
 
 //        $gatewayUrl = (new \App\Models\PaylivreGateway)->generateOldGatewayUrl($request, $depositTransaction);
-        $gatewayUrl = (new \App\Models\PaylivreGateway)->generateGatewayUrl($request, $depositTransaction);
+        $gatewayUrl = (new \App\Models\PaylivreGateway)->generatePaylivreGatewayUrl($request, $depositTransaction);
 
         return $gatewayUrl;
 //        return redirect($gatewayUrl);
@@ -60,7 +60,7 @@ class TransactionController extends Controller
         $this->validate($request, [
             'amount' => 'required|string',
             'email' => 'required|email',
-            'tax_document' => 'required'
+            'document_number' => 'required'
         ]);
 
         if (str_contains($request->amount,',')) {
@@ -100,71 +100,9 @@ class TransactionController extends Controller
         $merchant->save();
 
         //$gatewayUrl = (new \App\Models\PaylivreGateway)->generateOldGatewayUrl($request, $withdrawalTransaction);
-        $gatewayUrl = (new \App\Models\PaylivreGateway)->generateGatewayUrl($request, $withdrawalTransaction);
+        $gatewayUrl = (new \App\Models\PaylivreGateway)->generatePaylivreGatewayUrl($request, $withdrawalTransaction);
 
         return $gatewayUrl;
         //return redirect($gatewayUrl);
-    }
-
-    public function completeTransaction($payload)
-    {
-        $transactionId = $payload->data->partner_order_id;
-        $transaction = Transaction::find($transactionId);
-        $transaction->updated_at = Carbon::now();
-        $transaction->notes = json_encode($payload);
-        $user = User::find($transaction->user_id);
-        $merchant = User::find(1);
-        if ($transaction->transaction_type == TransactionType::DEPOSIT && $transaction->transaction_status != TransactionStatus::COMPLETED){
-            $user->wallet_balance_usd = $user->wallet_balance_usd + $transaction->amount;
-            $merchant->wallet_balance_usd = $merchant->wallet_balance_usd + $transaction->amount;
-        } elseif ($transaction->transaction_type == TransactionType::WITHDRAWAL && $transaction->notes && $transaction->transaction_status != TransactionStatus::COMPLETED) {
-            $user->wallet_balance_usd = $user->wallet_balance_usd - $transaction->amount;
-            $merchant->wallet_balance_usd = $merchant->wallet_balance_usd - $transaction->amount;
-        }
-        $transaction->transaction_status = TransactionStatus::COMPLETED;
-        $transaction->save();
-        $user->save();
-        $merchant->save();
-    }
-
-    public function cancelTransaction($payload)
-    {
-        $transactionId = $payload->data->partner_order_id;
-        $transaction = Transaction::find($transactionId);
-        $transaction->updated_at = Carbon::now();
-        $transaction->notes = json_encode($payload);
-        $user = User::find($transaction->user_id);
-        $merchant = User::find(1);
-        if ($transaction->transaction_type == TransactionType::WITHDRAWAL && $transaction->transaction_status != TransactionStatus::CANCELLED && $transaction->transaction_status != TransactionStatus::EXPIRED){
-            $user->wallet_balance_usd = $user->wallet_balance_usd + $transaction->amount;
-            $merchant->wallet_balance_usd = $merchant->wallet_balance_usd + $transaction->amount;
-        } elseif ($transaction->transaction_type == TransactionType::DEPOSIT && $transaction->transaction_status == TransactionStatus::COMPLETED) {
-            $user->wallet_balance_usd = $user->wallet_balance_usd - $transaction->amount;
-            $merchant->wallet_balance_usd = $merchant->wallet_balance_usd - $transaction->amount;
-        }
-        if ($transaction->transaction_status != TransactionStatus::EXPIRED){
-            $transaction->transaction_status = TransactionStatus::CANCELLED;
-        }
-        $transaction->save();
-        $user->save();
-        $merchant->save();
-    }
-
-    public function expireTransaction($payload)
-    {
-        $transactionId = $payload->data->partner_order_id;
-        $transaction = Transaction::find($transactionId);
-        $user = User::find($transaction->user_id);
-        $merchant = User::find(1);
-        if ($transaction->transaction_type == TransactionType::DEPOSIT && $transaction->transaction_status == TransactionStatus::COMPLETED){
-            $user->wallet_balance_usd = $user->wallet_balance_usd - $transaction->amount;
-            $merchant->wallet_balance_usd = $merchant->wallet_balance_usd - $transaction->amount;
-        }
-        $transaction->transaction_status = TransactionStatus::EXPIRED;
-        $transaction->updated_at = Carbon::now();
-        $transaction->notes = json_encode($payload);
-        $transaction->save();
-        $merchant->save();
-        $user->save();
     }
 }
