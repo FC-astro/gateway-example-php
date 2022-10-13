@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use App\Models\TransactionStatus;
 use App\Models\TransactionType;
 use App\Models\User;
+use App\Services\TransactionService;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Response as Res;
 use Illuminate\Http\Request;
@@ -134,6 +135,8 @@ class TransactionController extends Controller
 
         $response = (new PaylivreApi())->sendPaymentRequest($request, $depositTransaction);
 
+        $this->handlePaylivreApiResponse($response, $withdrawalTransaction);
+
         return $response;
     }
 
@@ -192,26 +195,28 @@ class TransactionController extends Controller
 
     public function handlePaylivreApiResponse(Response $response, $transaction)
     {
+        $content = json_decode($response,true);
         switch($response->status()){
             case Res::HTTP_CREATED:
                 $transaction->transaction_status = TransactionStatus::PENDING;
                 $transaction->save();
                 break;
             case Res::HTTP_FORBIDDEN:
-                $transaction->transaction_status = TransactionStatus::CANCELLED;
-                $transaction->save();
+                $transactionService = new TransactionService($transaction);
+                $transactionService->cancelTransaction($content);
                 break;
             case Res::HTTP_BAD_REQUEST:
-                $transaction->transaction_status = TransactionStatus::CANCELLED;
-                $transaction->save();
+                $transactionService = new TransactionService($transaction);
+                $transactionService->cancelTransaction($content);
                 break;
             case Res::HTTP_FAILED_DEPENDENCY:
-                $transaction->transaction_status = TransactionStatus::CANCELLED;
-                $transaction->save();
+                $transactionService = new TransactionService($transaction);
+                $transactionService->cancelTransaction($content);
                 break;
             case Res::HTTP_UNPROCESSABLE_ENTITY:
-                $transaction->transaction_status = TransactionStatus::CANCELLED;
-                $transaction->save();
+                $transactionService = new TransactionService($transaction);
+                $transactionService->cancelTransaction($content);
+                break;
         }
     }
 }

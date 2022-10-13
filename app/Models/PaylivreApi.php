@@ -41,7 +41,7 @@ class PaylivreApi
         $parameters['callback_url'] = 'http://127.0.0.1:8000/callback';
         $parameters['redirect_url'] = 'https://www.google.com';
 
-        if ($request->input('operation') == TransactionType::WITHDRAWAL) {
+        if ($request->input('operation') == 5) {
             $parameters['pix_key'] = $request->input('pix_key');
             $parameters['pix_key_type'] = $request->input('pix_key_type');
         }
