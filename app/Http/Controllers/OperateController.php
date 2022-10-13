@@ -5,23 +5,40 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Models\TransactionType;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class OperateController extends Controller
 {
     public function index(Request $request) {
         switch($request->input('operation')) {
             case 0:
-                $gatewayUrl = (new TransactionController())->deposit($request);
-                //redirect($gatewayUrl);
-                return view('transactions.gateway',[
-                    'gateway' => $gatewayUrl
-                ]);
+                if ($request->input('integration') == 'gateway') {
+                    $gatewayUrl = (new TransactionController())->paylivreGatewayDeposit($request);
+                    return view('transactions.gateway',[
+                        'gateway' => $gatewayUrl
+                    ]);
+                }
+                if ($request->input('integration') == 'api') {
+                    $response = (new TransactionController())->paylivreApiDeposit($request);
+                    $content = json_decode($response,true);
+                    return view('transactions.api',[
+                        'api' => $content
+                    ]);
+                }
             case 5:
-                $gatewayUrl = (new TransactionController())->withdraw($request);
-                //redirect($gatewayUrl);
-                return view('transactions.gateway',[
-                    'gateway' => $gatewayUrl
-                ]);
+                if ($request->input('integration') == 'gateway') {
+                    $gatewayUrl = (new TransactionController())->paylivreGatewayWithdrawal($request);
+                    return view('transactions.gateway',[
+                        'gateway' => $gatewayUrl
+                    ]);
+                }
+                if ($request->input('integration') == 'api') {
+                    $response = (new TransactionController())->paylivreApiWithdrawal($request);
+                    $content = json_decode($response,true);
+                    return view('transactions.api',[
+                        'api' => $content
+                    ]);
+                }
             case 10:
                 $data = [
                     'payment_method'=>'PIX',
@@ -31,11 +48,20 @@ class OperateController extends Controller
                 if ((Transaction::find($request->transaction_id))->transaction_type == TransactionType::WITHDRAWAL) {
                     $data['payment_method'] = 'Withdraw';
                 }
+
                 $payload = (new CallbackController())->simulateCallbackPayload($data);
                 $request = new Request();
                 $request->merge($payload);
+                $XToken = hash_hmac('sha256', json_encode($payload), env('PAYLIVRE_CALLBACK_TOKEN'));
+
+                $request->headers->set('X-Token',$XToken);
                 $response = (new CallbackController)->receivePaylivreCallback($request);
-                //$response = Http::post('http://127.0.0.1:8000/callback',$payload);
+
+                //$response = Http::withHeaders([
+                //                    'Accept' => 'application/json',
+                //                    'Content-Type' => 'application/json',
+                //                ])->post('http://127.0.0.1:8000/callback',$payload);
+
                 return view('transactions.callback',[
                     'callback' => [
                         'callback_received' => $request->all(),

@@ -17,8 +17,8 @@ Route::get('/register', [RegisterController::class,'index'])->name('register');
 Route::post('/register', [RegisterController::class,'store']);
 
 Route::post('/operate', [OperateController::class,'index'])->name('operate');
-Route::post('/operate/deposit',[TransactionController::class,'deposit'])->name('deposit');
-Route::post('/operate/withdraw',[TransactionController::class,'withdraw'])->name('withdraw');
+Route::post('/operate/deposit',[TransactionController::class,'paylivreGatewayDeposit'])->name('deposit');
+Route::post('/operate/withdraw',[TransactionController::class,'paylivreGatewayWithdrawal'])->name('withdraw');
 
 Route::post('/callback',[CallbackController::class,'receivePaylivreCallback'])->name('callback');
 

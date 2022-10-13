@@ -35,13 +35,14 @@ class PaylivreGateway extends Model
         $parameters['merchant_transaction_id'] = $transaction->id;
         $parameters['amount'] = $transaction->amount;
         $parameters['currency'] = $transaction->currency;
-        $parameters['type'] = $this::TYPE_PIX;
+        $parameters['type'] = $request->input('type') === 'paylivre_wallet' ? $this::TYPE_WALLET : $this::TYPE_PIX;
         $parameters['account_id'] = $transaction->user->id;
         $parameters['auto_approve'] = true;
         $parameters['callback_url'] = 'http://127.0.0.1:8000/callback';
         $parameters['redirect_url'] = 'google.com';
+        $parameters['api_token'] = $request->input('user_paylivre_api_token');
 
-        if ($request->input('operation') == TransactionType::WITHDRAWAL) {
+        if ($request->input('operation') == 5) {
             $parameters['pix_key'] = $request->input('pix_key');
             $parameters['pix_key_type'] = $request->input('pix_key_type');
         }
@@ -64,7 +65,7 @@ class PaylivreGateway extends Model
 
         $toHash = $gatewayToken.$baseUrl.$urlParameters;
 
-        $hashed = Hash::driver('bcrypt')->make($toHash);
+        $hashed = Hash::make($toHash);
         $signature = base64_encode($hashed);
 
         return $signature;

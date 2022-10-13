@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 
 class PaylivreApi
@@ -16,9 +17,13 @@ class PaylivreApi
     {
         $payload = $this->generatePaylivreApiRequestPayload($request, $transaction);
 
-        $response = Http::asForm()->post(env('PAYLIVRE_API_PAYMENT_ENDPOINT'),$payload)->json();
+        $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            ])
+            ->post(env('PAYLIVRE_API_PAYMENT_ENDPOINT'),$payload);
 
-        $content = json_decode($response,true);
+        return $response;
     }
 
     public function generatePaylivreApiRequestPayload(Request $request, Transaction $transaction): array
@@ -52,7 +57,7 @@ class PaylivreApi
 
         if ($parameters['type'] == PaylivreApi::TYPE_WALLET && $parameters['operation'] == 0) {
             $parameters['login_email'] = $request->input('email');
-            $parameters['api_token'] = $request->input('user_api_token');
+            $parameters['api_token'] = $request->input('user_paylivre_api_token');
         }
 
         return $parameters;
@@ -65,7 +70,7 @@ class PaylivreApi
 
         $toHash = $gatewayToken.$baseUrl.$urlParameters;
 
-        $hashed = password_hash($toHash,'PASSWORD_ARGON2I');
+        $hashed = Hash::make($toHash);
         $signature = base64_encode($hashed);
 
         return $signature;
