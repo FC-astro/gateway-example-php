@@ -11,7 +11,6 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Response as Res;
 use Illuminate\Support\Str;
 use function PHPUnit\Framework\arrayHasKey;

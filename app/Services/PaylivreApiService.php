@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Models;
+namespace App\Services;
 
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 
-class PaylivreApi
+class PaylivreApiService
 {
     const TYPE_PIX = 1;
     const TYPE_BILLET = 2;
@@ -55,7 +56,7 @@ class PaylivreApi
         $parameters['url'] = $gatewayUrl;
         $parameters['signature'] = $signature;
 
-        if ($parameters['type'] == PaylivreApi::TYPE_WALLET && $parameters['operation'] == 0) {
+        if ($parameters['type'] == PaylivreApiService::TYPE_WALLET && $parameters['operation'] == 0) {
             $parameters['login_email'] = $request->input('email');
             $parameters['api_token'] = $request->input('user_paylivre_api_token');
         }

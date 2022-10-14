@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Models\TransactionType;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 
 class OperateController extends Controller
 {
@@ -13,13 +12,13 @@ class OperateController extends Controller
         switch($request->input('operation')) {
             case 0:
                 if ($request->input('integration') == 'gateway') {
-                    $gatewayUrl = (new TransactionController())->paylivreGatewayDeposit($request);
+                    $gatewayUrl = (new PaylivreRequestController())->paylivreGatewayDeposit($request);
                     return view('transactions.gateway',[
                         'gateway' => $gatewayUrl
                     ]);
                 }
                 if ($request->input('integration') == 'api') {
-                    $response = (new TransactionController())->paylivreApiDeposit($request);
+                    $response = (new PaylivreRequestController())->paylivreApiDeposit($request);
                     $content = json_decode($response,true);
                     return view('transactions.api',[
                         'api' => $content
@@ -27,13 +26,13 @@ class OperateController extends Controller
                 }
             case 5:
                 if ($request->input('integration') == 'gateway') {
-                    $gatewayUrl = (new TransactionController())->paylivreGatewayWithdrawal($request);
+                    $gatewayUrl = (new PaylivreRequestController())->paylivreGatewayWithdrawal($request);
                     return view('transactions.gateway',[
                         'gateway' => $gatewayUrl
                     ]);
                 }
                 if ($request->input('integration') == 'api') {
-                    $response = (new TransactionController())->paylivreApiWithdrawal($request);
+                    $response = (new PaylivreRequestController())->paylivreApiWithdrawal($request);
                     $content = json_decode($response,true);
                     return view('transactions.api',[
                         'api' => $content

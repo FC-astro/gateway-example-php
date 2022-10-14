@@ -1,14 +1,15 @@
 <?php
 
-namespace App\Models;
+namespace App\Services;
 
 use App\Http\Controllers\OperateController;
+use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
-class PaylivreGateway extends Model
+class PaylivreGatewayService extends Model
 {
     const TYPE_PIX = 1;                              // 0001
     const TYPE_BILLET = 2;                           // 0010
