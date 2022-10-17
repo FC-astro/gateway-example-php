@@ -15,42 +15,38 @@ use Illuminate\Support\Facades\Response as Res;
 use Illuminate\Support\Str;
 use function PHPUnit\Framework\arrayHasKey;
 
-class CallbackController extends Controller
+class PaylivreCallbackController extends Controller
 {
     public function receivePaylivreCallback(Request $request)
     {
+        $payload = $request->all();
+
         if (! $this->authenticatePaylivreCallback($request)) {
             return $this->respondUnauthorized();
         }
 
-        $payload = $request->all();
-
-        if (arrayHasKey('order_status_id',$payload)) {
+        if (arrayHasKey('order_status_id',$payload) && arrayHasKey('partner_order_id',$payload)) {
             $transaction = Transaction::find($payload['partner_order_id']);
-            if (in_array($transaction->transaction_status,[TransactionStatus::COMPLETED,TransactionStatus::CANCELLED,TransactionStatus::EXPIRED])) {
+            if (in_array($transaction->transaction_status,[TransactionStatus::COMPLETED,TransactionStatus::CANCELED,TransactionStatus::EXPIRED])) {
                 return $this->respondBadRequest();
             }
+            $transactionService = new TransactionService($transaction);
             switch ($payload['order_status_id']) {
                 case 0: // Status NEW
                 case 1: // Status PENDING
                     // Request received successfully, finishing pre-processing and waiting for approval
-                    $transaction->transaction_status = TransactionStatus::PENDING;
-                    $transaction->notes = 'Waiting for payment';
-                    $transaction->save();
+                    $transactionService->startTransaction();
                     break;
                 case 2: // Status APPROVED -> Final Status
                     // Request approved successfully finish the transaction
-                    $transactionService = new TransactionService($transaction);
                     $transactionService->completeTransaction($payload);
                     break;
                 case 3: // Status CANCELED -> Final Status
                     // Unable to complete request, must be terminated unsuccessfully
-                    $transactionService = new TransactionService($transaction);
                     $transactionService->cancelTransaction($payload);
                     break;
                 case 4: // Status EXPIRED -> Final Status
                     // Payment was not finished in the permitted time, must be terminated unsuccessfully
-                    $transactionService = new TransactionService($transaction);
                     $transactionService->expireTransaction($payload);
                     break;
                 case 5: // Status INCOMPLETE
@@ -203,7 +199,7 @@ class CallbackController extends Controller
             'user_email'=> $user->email,
             'decimals' => 2,
             'attempts' => []
-            ];
+        ];
         return $callback;
     }
 }

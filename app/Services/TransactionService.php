@@ -27,7 +27,7 @@ class TransactionService
         if ($this->transaction->transaction_type == TransactionType::DEPOSIT && $this->transaction->transaction_status != TransactionStatus::COMPLETED){
             $user->wallet_balance_usd = $user->wallet_balance_usd + $this->transaction->amount;
             $merchant->wallet_balance_usd = $merchant->wallet_balance_usd + $this->transaction->amount;
-        } elseif ($this->transaction->transaction_type == TransactionType::WITHDRAWAL && $this->transaction->notes && $this->transaction->transaction_status != TransactionStatus::COMPLETED) {
+        } elseif ($this->transaction->transaction_type == TransactionType::WITHDRAWAL && $this->transaction->notes && $this->transaction->transaction_status == TransactionStatus::PENDING) {
             $user->wallet_balance_usd = $user->wallet_balance_usd - $this->transaction->amount;
             $merchant->wallet_balance_usd = $merchant->wallet_balance_usd - $this->transaction->amount;
         }
@@ -37,21 +37,21 @@ class TransactionService
         $merchant->save();
     }
 
-    public function cancelTransaction($payload)
+    public function cancelTransaction($payload = null)
     {
         $this->transaction->updated_at = Carbon::now();
         $this->transaction->notes = json_encode($payload);
         $user = User::find($this->transaction->user_id);
         $merchant = User::find(1);
-        if ($this->transaction->transaction_type == TransactionType::WITHDRAWAL && $this->transaction->transaction_status != TransactionStatus::CANCELLED && $this->transaction->transaction_status != TransactionStatus::EXPIRED){
+        if ($this->transaction->transaction_type == TransactionType::WITHDRAWAL && $this->transaction->transaction_status != TransactionStatus::CANCELED && $this->transaction->transaction_status == TransactionStatus::PENDING){
             $user->wallet_balance_usd = $user->wallet_balance_usd + $this->transaction->amount;
             $merchant->wallet_balance_usd = $merchant->wallet_balance_usd + $this->transaction->amount;
         } elseif ($this->transaction->transaction_type == TransactionType::DEPOSIT && $this->transaction->transaction_status == TransactionStatus::COMPLETED) {
             $user->wallet_balance_usd = $user->wallet_balance_usd - $this->transaction->amount;
             $merchant->wallet_balance_usd = $merchant->wallet_balance_usd - $this->transaction->amount;
         }
-        if ($this->transaction->transaction_status != TransactionStatus::EXPIRED){
-            $this->transaction->transaction_status = TransactionStatus::CANCELLED;
+        if ($this->transaction->transaction_status == TransactionStatus::PENDING){
+            $this->transaction->transaction_status = TransactionStatus::CANCELED;
         }
         $this->transaction->save();
         $user->save();
@@ -72,5 +72,25 @@ class TransactionService
         $this->transaction->save();
         $merchant->save();
         $user->save();
+    }
+
+    public function startTransaction()
+    {
+        $this->transaction->transaction_status = TransactionStatus::PENDING;
+        $this->transaction->notes = 'Waiting for approval.';
+        $this->transaction->save();
+
+        if ($this->transaction->transaction_type == TransactionType::WITHDRAWAL) {
+            $user = User::find($this->transaction->user_id);
+            $merchant = User::find(1);
+            if ($this->transaction->amount <= $user->wallet_balance_usd && $this->transaction->amount <= $merchant->wallet_balance_usd) {
+                $user->wallet_balance_usd = $user->wallet_balance_usd - $this->transaction->amount;
+                $merchant->wallet_balance_usd = $merchant->wallet_balance_usd - $this->transaction->amount;
+                $user->save();
+                $merchant->save();
+            } else {
+                $this->cancelTransaction();
+            }
+        }
     }
 }

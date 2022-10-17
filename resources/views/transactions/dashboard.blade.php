@@ -18,39 +18,39 @@
                     @csrf
                     @auth()
                         <div class="flex w-full mb-4 mt-4 text-sm text-black mr-3">
-                            <select name="type" id="type" class="gb-pink-300 mr-3 border-2 w-full rounded-lg @error('type')border-blue-500 @enderror">
+                            <select name="type" id="type" class="gb-pink-300 mr-3 border-2 w-full rounded-lg @error('type') border-blue-500 @enderror">
                                 <option value="">Type</option>
                                 <option value="pix">PIX</option>
                                 <option value="paylivre_wallet">Wallet</option>
                             </select>
 
-                            <select name="operation" id="operation" class="gb-pink-300 mr-3 border-2 w-full rounded-lg @error('operation')border-blue-500 @enderror">
+                            <select name="operation" id="operation" class="gb-pink-300 mr-3 border-2 w-full rounded-lg @error('operation') border-blue-500 @enderror">
                                 <option value="">Operation</option>
-                                <option value="0">Cash In (Deposit)</option>
-                                <option value="5">Cash Out (Withdrawal)</option>
+                                <option value="0">Deposit</option>
+                                <option value="5">Withdrawal</option>
                             </select>
-
-                            <label for="email" class="sr-only">Email</label>
-                            <input type="text" name="email" id="email" placeholder="Your email" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('email')border-blue-500 @enderror" value="{{old('email')}}">
-
-                            <label for="document_number" class="sr-only">Tax Document Number</label>
-                            <input type="text" name="document_number" id="document_number" placeholder="Your tax document number" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('document_number')border-blue-500 @enderror"value="{{old('document_number')}}">
 
                             <label for="amount" class="sr-only">Amount</label>
-                            <input type="text" name="amount" id="amount" placeholder="Amount" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('amount')border-blue-500 @enderror">
+                            <input type="text" name="amount" id="amount" placeholder="Amount" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('amount') border-blue-500 @enderror">
 
-                            <label for="user_paylivre_api_token" class="sr-only">Paylivre Api Token</label>
-                            <input type="text" name="user_paylivre_api_token" id="user_paylivre_api_token" placeholder="Your Paylivre Api Token" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('user_paylivre_api_token')border-blue-500 @enderror">
+                            <label for="email" class="sr-only">Email</label>
+                            <input type="text" name="email" id="email" placeholder="Email" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('email') border-blue-500 @enderror">
+
+                            <label for="document_number" class="sr-only">CPF</label>
+                            <input type="text" name="document_number" id="document_number" placeholder="CPF" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('document_number') border-blue-500 @enderror">
 
                             <label for="pix_key" class="sr-only">Pix Key</label>
-                            <input type="text" name="pix_key" id="pix_key" placeholder="Your Pix Key" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('pix_key')border-blue-500 @enderror">
+                            <input type="text" name="pix_key" id="pix_key" placeholder="Pix Key" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('pix_key') border-blue-500 @enderror">
 
-                            <select name="pix_key_type" id="pix_key_type" class="gb-pink-300 mr-3 border-2 w-full rounded-lg @error('pix_key_type')border-blue-500 @enderror">
-                                <option value="">Pix Key Type</option>
+                            <select name="pix_key_type" id="pix_key_type" class="gb-pink-300 mr-3 border-2 w-full rounded-lg @error('pix_key_type') border-blue-500 @enderror">
+                                <option value="">PIX Key Type</option>
                                 <option value="0">CPF</option>
-                                <option value="2">Phone Number</option>
+                                <option value="2">Phone</option>
                                 <option value="3">Email</option>
                             </select>
+
+                            <label for="user_paylivre_auth_token" class="sr-only">Pix Key</label>
+                            <input type="text" name="user_paylivre_auth_token" id="user_paylivre_auth_token" placeholder="Paylivre Token" class="mr-3 gb-pink-300 border-2 w-full p-4 rounded-lg @error('user_paylivre_auth_token') border-blue-500 @enderror">
                         </div>
                         <div class="flex mr-3">
                             <button type="submit" name="integration" class="flex bg-blue-600 text-white px=4 py-3 rounded font-medium w-6/12 justify-center mr-3" value="gateway">PAYLIVRE GATEWAY</button>
@@ -77,7 +77,7 @@
                                 @if ($transaction->transaction_status == \App\Models\TransactionStatus::PENDING)
                                     Pending
                                 @endif
-                                @if ($transaction->transaction_status == \App\Models\TransactionStatus::CANCELLED)
+                                @if ($transaction->transaction_status == \App\Models\TransactionStatus::CANCELED)
                                     Cancelled
                                 @endif
                                 @if ($transaction->transaction_status == \App\Models\TransactionStatus::COMPLETED)
@@ -98,8 +98,8 @@
                                 @if ($transaction->transaction_status == \App\Models\TransactionStatus::PENDING)
                                     Pending
                                 @endif
-                                @if ($transaction->transaction_status == \App\Models\TransactionStatus::CANCELLED)
-                                    Cancelled
+                                @if ($transaction->transaction_status == \App\Models\TransactionStatus::CANCELED)
+                                    Canceled
                                 @endif
                                 @if ($transaction->transaction_status == \App\Models\TransactionStatus::COMPLETED)
                                     Completed

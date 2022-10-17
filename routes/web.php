@@ -2,15 +2,14 @@
 
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\OperateController;
-use App\Http\Controllers\CallbackController;
-use App\Http\Controllers\PaylivreRequestController;
-    use App\Http\Controllers\TransactionController;
-    use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PaylivreCallbackController;
+use App\Http\Controllers\TransactionController;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
 
-Route::get('/', [LoginController::class,'index'])->name('login');
-Route::post('/login', [LoginController::class,'login']);
+Route::get('/', [LoginController::class,'index']);
+Route::post('/login', [LoginController::class,'login'])->name('login');
 
 Route::post('/logout', [LogoutController::class,'logout'])->name('logout');
 
@@ -22,8 +21,5 @@ Route::prefix('/transactions')->group(function() {
 
 Route::post('/operate', [OperateController::class,'index'])->name('operate');
 
-Route::post('/operate/deposit',[PaylivreRequestController::class,'paylivreGatewayDeposit'])->name('deposit');
-Route::post('/operate/withdraw',[PaylivreRequestController::class,'paylivreGatewayWithdrawal'])->name('withdraw');
-
-Route::post('/callback',[CallbackController::class,'receivePaylivreCallback'])->name('callback');
+Route::post('/callback',[PaylivreCallbackController::class,'receivePaylivreCallback'])->name('callback');
 
