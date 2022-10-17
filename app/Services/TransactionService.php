@@ -27,9 +27,6 @@ class TransactionService
         if ($this->transaction->transaction_type == TransactionType::DEPOSIT && $this->transaction->transaction_status != TransactionStatus::COMPLETED){
             $user->wallet_balance_usd = $user->wallet_balance_usd + $this->transaction->amount;
             $merchant->wallet_balance_usd = $merchant->wallet_balance_usd + $this->transaction->amount;
-        } elseif ($this->transaction->transaction_type == TransactionType::WITHDRAWAL && $this->transaction->transaction_status == TransactionStatus::PENDING) {
-            $user->wallet_balance_usd = $user->wallet_balance_usd - $this->transaction->amount;
-            $merchant->wallet_balance_usd = $merchant->wallet_balance_usd - $this->transaction->amount;
         }
         $this->transaction->transaction_status = TransactionStatus::COMPLETED;
         $this->transaction->save();
